@@ -2,6 +2,7 @@
 #define SPONGE_LIBSPONGE_BYTE_STREAM_HH
 
 #include <string>
+#include "queue.hh"
 
 //! \brief An in-order byte stream.
 
@@ -16,12 +17,22 @@ class ByteStream {
     // all, but if any of your tests are taking longer than a second,
     // that's a sign that you probably want to keep exploring
     // different approaches.
+    size_t _capacity{};
+    size_t _bytesWriten{};
+    size_t _bytesRead{};
+    bool _eof{};
+    Queue<char> *_q{};
 
     bool _error{};  //!< Flag indicating that the stream suffered an error.
 
   public:
     //! Construct a stream with room for `capacity` bytes.
     ByteStream(const size_t capacity);
+    ByteStream(const ByteStream& byteStream)=delete;
+    ByteStream& operator=(const ByteStream&)=delete;
+
+
+    ~ByteStream();
 
     //! \name "Input" interface for the writer
     //!@{
