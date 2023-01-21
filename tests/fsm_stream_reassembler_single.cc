@@ -122,6 +122,7 @@ int main() {
         {
             ReassemblerTestHarness test{8};
 
+            cout << "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz" << endl;
             test.execute(SubmitSegment{"abc", 0});
             test.execute(BytesAssembled(3));
             test.execute(NotAtEof{});
