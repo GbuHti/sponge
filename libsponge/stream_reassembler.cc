@@ -80,6 +80,7 @@ StreamReassembler::Position getPosition(vector<uint32_t> &interval, vector<uint3
         if (interval[1] < newInterval[0]) {
             return StreamReassembler::Position::LL;
         } else if (interval[1] >= newInterval[0] && interval[1] <= newInterval[1]) {
+            // eg. [1,2) [2,3) 它们的位置关系属于 LM
             return StreamReassembler::Position::LM;
         } else {
             return StreamReassembler::Position::LR;
@@ -177,6 +178,7 @@ void StreamReassembler::push_substring(const string &data, const uint64_t index,
     }
     Interval newInterval(data, index, firstUnacceptable, eof);
     vector<uint32_t> interval = GetUpdatedInterval(_intervals, newInterval._interval);
+    // 应该检查返回值
     if (interval.empty()) {
         return;
     }
