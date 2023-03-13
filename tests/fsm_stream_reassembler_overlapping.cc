@@ -11,6 +11,7 @@ using namespace std;
 int main() {
     try {
         {
+            cout << "===== 1" << endl;
             // Overlapping assembled (unread) section
             const size_t cap = {1000};
             ReassemblerTestHarness test{cap};
@@ -23,6 +24,7 @@ int main() {
         }
 
         {
+            cout << "===== 2" << endl;
             // Overlapping assembled (read) section
             const size_t cap = {1000};
             ReassemblerTestHarness test{cap};
@@ -36,6 +38,7 @@ int main() {
         }
 
         {
+            cout << "===== 3" << endl;
             // Overlapping unassembled section, resulting in assembly
             const size_t cap = {1000};
             ReassemblerTestHarness test{cap};
@@ -49,6 +52,7 @@ int main() {
             test.execute(BytesAssembled(2));
         }
         {
+            cout << "===== 4" << endl;
             // Overlapping unassembled section, not resulting in assembly
             const size_t cap = {1000};
             ReassemblerTestHarness test{cap};
@@ -62,6 +66,7 @@ int main() {
             test.execute(BytesAssembled(0));
         }
         {
+            cout << "===== 5" << endl;
             // Overlapping unassembled section, not resulting in assembly
             const size_t cap = {1000};
             ReassemblerTestHarness test{cap};
@@ -76,6 +81,7 @@ int main() {
         }
 
         {
+            cout << "===== 6" << endl;
             // Overlapping multiple unassembled sections
             const size_t cap = {1000};
             ReassemblerTestHarness test{cap};
@@ -91,6 +97,7 @@ int main() {
         }
 
         {
+            cout << "===== 7" << endl;
             // Submission over existing
             const size_t cap = {1000};
             ReassemblerTestHarness test{cap};
@@ -109,6 +116,7 @@ int main() {
         }
 
         {
+            cout << "===== 8" << endl;
             // Submission within existing
             const size_t cap = {1000};
             ReassemblerTestHarness test{cap};

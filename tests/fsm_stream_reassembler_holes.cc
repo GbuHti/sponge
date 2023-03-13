@@ -11,6 +11,7 @@ using namespace std;
 int main() {
     try {
         {
+            cout << "===== 1" << endl;
             ReassemblerTestHarness test{65000};
 
             test.execute(SubmitSegment{"b", 1});
@@ -21,6 +22,7 @@ int main() {
         }
 
         {
+            cout << "===== 2" << endl;
             ReassemblerTestHarness test{65000};
 
             test.execute(SubmitSegment{"b", 1});
@@ -32,6 +34,7 @@ int main() {
         }
 
         {
+            cout << "===== 3" << endl;
             ReassemblerTestHarness test{65000};
 
             test.execute(SubmitSegment{"b", 1}.with_eof(true));
@@ -48,6 +51,7 @@ int main() {
         }
 
         {
+            cout << "===== 4" << endl;
             ReassemblerTestHarness test{65000};
 
             test.execute(SubmitSegment{"b", 1});
@@ -59,6 +63,7 @@ int main() {
         }
 
         {
+            cout << "===== 5" << endl;
             ReassemblerTestHarness test{65000};
 
             test.execute(SubmitSegment{"b", 1});
@@ -84,6 +89,7 @@ int main() {
         }
 
         {
+            cout << "===== 6" << endl;
             ReassemblerTestHarness test{65000};
 
             test.execute(SubmitSegment{"b", 1});
@@ -104,6 +110,7 @@ int main() {
         }
 
         {
+            cout << "===== 7" << endl;
             ReassemblerTestHarness test{65000};
 
             test.execute(SubmitSegment{"b", 1});

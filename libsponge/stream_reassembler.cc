@@ -14,22 +14,23 @@ using namespace std;
 
 Interval::Interval(const string &str, size_t index, uint32_t firstUnacceptable, bool eof){
 
+    _eof = (index + str.size() <= firstUnacceptable) && eof;
+    // 左闭右开表示法：data="abcd" index=1 => _interval[0] = 1, _interval[1] = 4;
     _interval[0] = index;
-    _interval[1] = (index + str.size() - 1 < firstUnacceptable) ? index + str.size() - 1 : firstUnacceptable - 1;
-    _s = str.substr(0, _interval[1] - _interval[0] + 1);
-    _eof = (index + str.size() < firstUnacceptable) ? eof : false;
+    _interval[1] = (index + str.size() <= firstUnacceptable) ? index + str.size() : firstUnacceptable;
+    _s = str.substr(0, _interval[1] - _interval[0]);
 }
 
 Interval::Interval(const vector<uint32_t> &interval, uint32_t firstUnacceptable, bool eof): _eof(eof) {
+    _eof = (interval[1] <= firstUnacceptable) && eof;
     _interval[0] = interval[0];
-    _interval[1] = (interval[1] < firstUnacceptable) ? interval[1] : firstUnacceptable - 1;
-    _s = string(_interval[1]-_interval[0] + 1, 0);
-    _eof = (interval[1] < firstUnacceptable) ? eof : false;
+    _interval[1] = (interval[1] <= firstUnacceptable) ? interval[1] : firstUnacceptable;
+    _s = string(_interval[1] - _interval[0], 0);
 }
 
 StreamReassembler::StreamReassembler(const size_t capacity): _output(capacity), _capacity(capacity) {}
 
-void insertNewInterval(vector<Interval> &intervals, Interval newInterval) {
+void InsertNewInterval(vector<Interval> &intervals, Interval newInterval) {
     for (auto it = intervals.begin(); it != intervals.end(); it++) {
         if (newInterval._interval[0] < it->_interval[0]) {
             intervals.insert(it, newInterval);
@@ -65,17 +66,27 @@ string getPostionStr(StreamReassembler::Position position)
     }
 }
 
+
+/*      +----------------+
+ *      |   interval     |
+ *      +----------------+
+ *                              +----------------+
+ *                              |   newInterval  |
+ *                              +----------------+
+ * postion: LL, interval is totally at the left of newInterval.
+ */
 StreamReassembler::Position getPosition(vector<uint32_t> &interval, vector<uint32_t> &newInterval) {
     if (interval[0] < newInterval[0]) {
-        if (interval[1] < newInterval[0] - 1) {
+        if (interval[1] < newInterval[0]) {
             return StreamReassembler::Position::LL;
-        } else if (interval[1] >= newInterval[0] - 1 && interval[1] <= newInterval[1] + 1) {
+        } else if (interval[1] >= newInterval[0] && interval[1] <= newInterval[1]) {
             return StreamReassembler::Position::LM;
         } else {
             return StreamReassembler::Position::LR;
         }
-    } else if (interval[0] >= newInterval[0] - 1 && interval[0] <= newInterval[1] + 1) {
-        if (interval[1] >= newInterval[0] - 1 && interval[1] <= newInterval[1] + 1) {
+        // [2,5) vs [2,8)    &&   [7,9) vs [3, 7)
+    } else if (interval[0] >= newInterval[0] && interval[0] <= newInterval[1]) {
+        if (interval[1] > newInterval[0] && interval[1] <= newInterval[1]) {
             return StreamReassembler::Position::MM;
         } else {
             return StreamReassembler::Position::MR;
@@ -85,6 +96,18 @@ StreamReassembler::Position getPosition(vector<uint32_t> &interval, vector<uint3
     }
 }
 
+/* example:
+ *      +----------------+    +----------------+    +----------------+
+ *      |   interval     |    |   interval     |    |   interval     |
+ *      +----------------+    +----------------+    +----------------+
+ *                              +---------------------+
+ *                              |     newInterval     |
+ *                              +---------------------+
+ * result:
+ *                            +--------------------------------------+
+ *                            |            UpdateInterval            |
+ *                            +--------------------------------------+
+ */
 vector<uint32_t> GetUpdatedInterval(vector<Interval> &intervals, vector<uint32_t> &newInterval) {
     int64_t mostLeft = -1;
     int64_t mostRight = -1;
@@ -95,11 +118,13 @@ vector<uint32_t> GetUpdatedInterval(vector<Interval> &intervals, vector<uint32_t
             mostLeft = intervals[i]._interval[0];
         } else if (position == StreamReassembler::Position::MR) {
             mostRight = intervals[i]._interval[1];
-        } else if (position == StreamReassembler::Position::MM) {
         } else if (position == StreamReassembler::Position::LR) {
             stop = true;
+        } else {
+            /* do noting */
         }
     }
+
 
     if (stop) {
         return {};
@@ -120,7 +145,7 @@ vector<uint32_t> GetUpdatedInterval(vector<Interval> &intervals, vector<uint32_t
 
 void displayVector(vector<uint32_t> &interval)
 {
-    cout << "[" << interval[0] << "," << interval[1] << "]" << endl;
+    cout << "[" << interval[0] << "," << interval[1] << ")" << endl;
 }
 
 void displayIntervals(vector<Interval> &intervals)
@@ -135,7 +160,7 @@ void displayIntervals(vector<Interval> &intervals)
 vector<Interval>::iterator OneIntervalContainFirstUnassemble(vector<Interval> &intervals, uint32_t firstUnAssembled)
 {
     for (auto it = intervals.begin(); it != intervals.end(); it++) {
-        if (firstUnAssembled >= it->_interval[0]) {
+        if ((firstUnAssembled >= it->_interval[0]) && (firstUnAssembled <= it->_interval[1])) {
             return it;
         }
     }
@@ -145,16 +170,21 @@ vector<Interval>::iterator OneIntervalContainFirstUnassemble(vector<Interval> &i
 //! \details This function accepts a substring (aka a segment) of bytes,
 //! possibly out-of-order, from the logical stream, and assembles any newly
 //! contiguous substrings and writes them into the output stream in order.
-void StreamReassembler::push_substring(const string &data, const size_t index, const bool eof) {
+void StreamReassembler::push_substring(const string &data, const uint64_t index, const bool eof) {
     size_t firstUnacceptable = _firstUnassembled + _output.remaining_capacity();
-    if (index >= firstUnacceptable || (data.size() < 1 && eof == false)) {
+    if (index >= firstUnacceptable || (data.size() < 1 && eof == false) || (index + data.size() <= _firstUnassembled && eof == false)) {
         return;
     }
     Interval newInterval(data, index, firstUnacceptable, eof);
     vector<uint32_t> interval = GetUpdatedInterval(_intervals, newInterval._interval);
-    Interval updatedInterval(interval, firstUnacceptable, eof);
-    updatedInterval._s.replace(newInterval._interval[0] - updatedInterval._interval[0], newInterval._s.size(), newInterval._s);
-    // Lookup Intervals
+    if (interval.empty()) {
+        return;
+    }
+    Interval updatedInterval(interval, firstUnacceptable, newInterval._eof);
+    // 部分填充 updatedInterval 中的字串
+    updatedInterval._s.replace(
+        newInterval._interval[0] - updatedInterval._interval[0], newInterval._s.size(), newInterval._s);
+    // 再填充 updatedInterval 中字串剩下的部分
     auto it = _intervals.begin();
     while(it != _intervals.end()) {
         if (getPosition(it->_interval, updatedInterval._interval) == StreamReassembler::Position::MM) {
@@ -168,21 +198,26 @@ void StreamReassembler::push_substring(const string &data, const size_t index, c
             it++;
         }
     }
+    cout << "updated interval: " << updatedInterval._s << "[0]: " << updatedInterval._interval[0] << " [1]: "
+        << updatedInterval._interval[1] << endl;
 
     // Update Intervals
-    insertNewInterval(_intervals, updatedInterval);
+    InsertNewInterval(_intervals, updatedInterval);
+    //for (auto i = _intervals.begin(); i != _intervals.end(); i++) {
+    //    cout << "after insert => [0]: " << i->_interval[0] << "[1]: " << i->_interval[1] << endl;
+    //}
 
     vector<Interval>::iterator theOne = OneIntervalContainFirstUnassemble(_intervals, _firstUnassembled);
     if ( theOne != _intervals.end()) {
-        _output.write(theOne->_s.substr(_firstUnassembled - theOne->_interval[0], theOne->_interval[1] - _firstUnassembled + 1));
+        cout << "yzb One Interval:[" << theOne->_interval[0] << "," << theOne->_interval[1]
+             << ") contain FirstUnassemle:" << _firstUnassembled << endl;
+        _output.write(theOne->_s.substr(_firstUnassembled - theOne->_interval[0], theOne->_interval[1] - _firstUnassembled));
         if (theOne->_eof == true) {
             _output.end_input();
         }
-        _firstUnassembled = theOne->_interval[1] + 1;
+        _firstUnassembled = theOne->_interval[1];
         _intervals.erase(theOne);
-
     }
-    (void)eof;
 }
 
 
@@ -200,4 +235,3 @@ bool StreamReassembler::empty() const {
     }
     return false;
 }
-

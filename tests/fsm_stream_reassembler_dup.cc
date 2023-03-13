@@ -13,6 +13,7 @@ int main() {
         auto rd = get_random_generator();
 
         {
+            cout << "===== 1" << endl;
             ReassemblerTestHarness test{65000};
 
             test.execute(SubmitSegment{"abcd", 0});
@@ -27,6 +28,7 @@ int main() {
         }
 
         {
+            cout << "===== 2" << endl;
             ReassemblerTestHarness test{65000};
 
             test.execute(SubmitSegment{"abcd", 0});
@@ -51,6 +53,7 @@ int main() {
         }
 
         {
+            cout << "===== 3" << endl;
             ReassemblerTestHarness test{65000};
 
             test.execute(SubmitSegment{"abcdefgh", 0});
@@ -68,6 +71,7 @@ int main() {
                 auto end = data.begin();
                 std::advance(end, end_i);
 
+                cout << "3: " << string{start, end} << " pos " << start_i << endl;
                 test.execute(SubmitSegment{string{start, end}, start_i});
                 test.execute(BytesAssembled(8));
                 test.execute(BytesAvailable(""));
@@ -76,6 +80,7 @@ int main() {
         }
 
         {
+            cout << "===== 4" << endl;
             ReassemblerTestHarness test{65000};
 
             test.execute(SubmitSegment{"abcd", 0});

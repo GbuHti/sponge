@@ -9,8 +9,11 @@ using namespace std;
 
 class Interval {
   public:
+    //! the substring belong to this interval
     string _s = {};
+    //! record the begin and end sequence of this interval
     vector<uint32_t> _interval = vector<uint32_t>(2);
+    //! indicate if this interval is the last substring of string.
     bool _eof = false;
 
     Interval(const string &str, size_t index, uint32_t firstUnacceptable, bool eof);

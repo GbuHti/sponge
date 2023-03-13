@@ -11,6 +11,7 @@ using namespace std;
 int main() {
     try {
         {
+            cout << "===== 1" << endl;
             ReassemblerTestHarness test{65000};
 
             test.execute(BytesAssembled(0));
@@ -19,6 +20,7 @@ int main() {
         }
 
         {
+            cout << "===== 2" << endl;
             ReassemblerTestHarness test{65000};
 
             test.execute(SubmitSegment{"a", 0});
@@ -29,6 +31,7 @@ int main() {
         }
 
         {
+            cout << "===== 3" << endl;
             ReassemblerTestHarness test{65000};
 
             test.execute(SubmitSegment{"a", 0}.with_eof(true));
@@ -39,6 +42,7 @@ int main() {
         }
 
         {
+            cout << "===== 4" << endl;
             ReassemblerTestHarness test{65000};
 
             test.execute(SubmitSegment{"", 0}.with_eof(true));
@@ -49,6 +53,7 @@ int main() {
         }
 
         {
+            cout << "===== 5" << endl;
             ReassemblerTestHarness test{65000};
 
             test.execute(SubmitSegment{"b", 0}.with_eof(true));
@@ -59,6 +64,7 @@ int main() {
         }
 
         {
+            cout << "===== 6" << endl;
             ReassemblerTestHarness test{65000};
 
             test.execute(SubmitSegment{"", 0});
@@ -69,6 +75,7 @@ int main() {
         }
 
         {
+            cout << "===== 7" << endl;
             ReassemblerTestHarness test{8};
 
             test.execute(SubmitSegment{"abcdefgh", 0});
@@ -79,6 +86,7 @@ int main() {
         }
 
         {
+            cout << "===== 8" << endl;
             ReassemblerTestHarness test{8};
 
             test.execute(SubmitSegment{"abcdefgh", 0}.with_eof(true));
@@ -89,6 +97,7 @@ int main() {
         }
 
         {
+            cout << "===== 9" << endl;
             ReassemblerTestHarness test{8};
 
             test.execute(SubmitSegment{"abc", 0});
@@ -102,6 +111,7 @@ int main() {
         }
 
         {
+            cout << "===== 10" << endl;
             ReassemblerTestHarness test{8};
 
             test.execute(SubmitSegment{"abc", 0});
@@ -120,6 +130,7 @@ int main() {
 
         // credit for test: Bill Lin (2020)
         {
+            cout << "===== 11" << endl;
             ReassemblerTestHarness test{8};
 
             cout << "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz" << endl;
