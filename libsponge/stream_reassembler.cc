@@ -222,7 +222,6 @@ void StreamReassembler::push_substring(const string &data, const uint64_t index,
     }
 }
 
-
 size_t StreamReassembler::unassembled_bytes() const {
     size_t cnt = 0;
     for (auto it : _intervals) {
