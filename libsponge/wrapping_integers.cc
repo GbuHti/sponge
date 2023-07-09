@@ -32,6 +32,8 @@ WrappingInt32 wrap(uint64_t n, WrappingInt32 isn) {
 //! has a different ISN.
 uint64_t unwrap(WrappingInt32 n, WrappingInt32 isn, uint64_t checkpoint) {
     uint64_t d = 1ll << 32;
+    // - - # - - - - * - - | - - - - - - - - - -   1
+    // - - - - - - - - - - | - - - - - - - - - -   0
     uint32_t layer = (checkpoint % d > d/2)? (checkpoint / d + 1) : (checkpoint / d);
     uint64_t t1 = (n.raw_value() - isn.raw_value())  + (d * layer);
     uint64_t dist1 = t1 > checkpoint ? t1 - checkpoint : checkpoint - t1;

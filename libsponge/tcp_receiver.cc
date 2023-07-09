@@ -11,9 +11,32 @@ void DUMMY_CODE(Targs &&... /* unused */) {}
 using namespace std;
 
 void TCPReceiver::segment_received(const TCPSegment &seg) {
-    DUMMY_CODE(seg);
+    if (seg.header().syn) {
+        _syn = true;
+        _ISN = seg.header().seqno;
+    }
+    if(_syn) {
+        uint64_t absSeqno = unwrap(seg.header().seqno, _ISN, _checkPoint);
+        uint64_t index = seg.header().syn ? absSeqno : absSeqno - 1;
+        _reassembler.push_substring(seg.payload().copy(), index, seg.header().fin);
+        _checkPoint = absSeqno;
+        /* 不可以直接使用seg.header().fin */
+        _fin = _reassembler.stream_out().input_ended();
+    }
 }
 
-optional<WrappingInt32> TCPReceiver::ackno() const { return {}; }
+optional<WrappingInt32> TCPReceiver::ackno() const
+{
+    if (_syn) {
+        if (_fin) {
+            return _ISN + _reassembler.stream_out().bytes_written() + 2;
+        }
+        return _ISN + _reassembler.stream_out().bytes_written() + 1;
+    }
+    return nullopt;
+}
 
-size_t TCPReceiver::window_size() const { return {}; }
+size_t TCPReceiver::window_size() const
+{
+    return _reassembler.stream_out().remaining_capacity();
+}
