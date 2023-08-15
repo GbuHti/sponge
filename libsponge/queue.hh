@@ -74,7 +74,7 @@ public:
         } else if (empty()) {
             return 0;
         } else {
-            std::cout << "writePtr_=" << writePtr_ << "  readPrt_=" << readPtr_ << std::endl;
+            //std::cout << "writePtr_=" << writePtr_ << "  readPrt_=" << readPtr_ << std::endl;
             return writePtr_ <= readPtr_ ? writePtr_ + size_ + 1 - readPtr_ : writePtr_ - readPtr_;
         }
     }

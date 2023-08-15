@@ -23,6 +23,8 @@ class TCPSender {
     //! outbound queue of segments that the TCPSender wants sent
     std::queue<TCPSegment> _segments_out{};
 
+    std::queue<TCPSegment> _segments_outstanding{};
+
     //! retransmission timer for the connection
     unsigned int _initial_retransmission_timeout;
 
@@ -31,6 +33,11 @@ class TCPSender {
 
     //! the (absolute) sequence number for the next byte to be sent
     uint64_t _next_seqno{0};
+
+    size_t _windowSize{1};
+
+    size_t _timeInFlight{};
+    size_t _lastTimeout{};
 
   public:
     //! Initialize a TCPSender
