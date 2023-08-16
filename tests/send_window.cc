@@ -29,6 +29,20 @@ int main() {
             test.execute(ExpectNoSegment{});
         }
 
+        //{
+        //    TCPConfig cfg;
+        //    WrappingInt32 isn(rd());
+        //    cfg.fixed_isn = isn;
+
+        //    TCPSenderTestHarness test{"Initial receiver advertised window is respected", cfg};
+        //    test.execute(ExpectSegment{}.with_no_flags().with_syn(true).with_payload_size(0).with_seqno(isn));
+        //    test.execute(AckReceived{WrappingInt32{isn + 1}}.with_win(4));
+        //    test.execute(ExpectNoSegment{});
+        //    test.execute(WriteBytes{"abcdefg"});
+        //    test.execute(ExpectSegment{}.with_no_flags().with_data("abcd"));
+        //    test.execute(ExpectNoSegment{});
+        //}
+
         {
             TCPConfig cfg;
             WrappingInt32 isn(rd());

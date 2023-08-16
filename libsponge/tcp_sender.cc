@@ -20,7 +20,9 @@ using namespace std;
 TCPSender::TCPSender(const size_t capacity, const uint16_t retx_timeout, const std::optional<WrappingInt32> fixed_isn)
     : _isn(fixed_isn.value_or(WrappingInt32{random_device()()}))
     , _initial_retransmission_timeout{retx_timeout}
-    , _stream(capacity) {}
+    , _stream(capacity) {
+    _retransmission_timeout = _initial_retransmission_timeout;
+}
 
 size_t TCPSender::bytes_in_flight() const
 {
@@ -36,7 +38,7 @@ size_t TCPSender::bytes_in_flight() const
 void TCPSender::fill_window()
 {
     cout << "------- eof=" << _stream.eof() << " buff_size=" << _stream.buffer_size() << endl;
-    while(((_stream.buffer_size() > 0) && (_windowSize > 0)) || (_next_seqno == 0)) {
+    while(((_stream.buffer_size() > 0) || (_next_seqno == 0) || (_stream.eof())) && (_windowSize > 0)) {
         size_t maxDataLenReadFromByteStream{};
         if (_stream.buffer_size() < _windowSize) {
             maxDataLenReadFromByteStream = _stream.buffer_size();
@@ -80,6 +82,8 @@ void TCPSender::ack_received(const WrappingInt32 ackno, const uint16_t window_si
         cout << "absAckno=" << absAckno << " absSeqnno=" << absSeqno << endl;
         if (absSeqno <= absAckno) {
             _segments_outstanding.pop();
+            _consecutive_retransmissions = 0;
+            _retransmission_timeout = _initial_retransmission_timeout;
         } else {
             break;
         }
@@ -92,16 +96,20 @@ void TCPSender::ack_received(const WrappingInt32 ackno, const uint16_t window_si
 void TCPSender::tick(const size_t ms_since_last_tick)
 {
     _timeInFlight += ms_since_last_tick;
-    if ((_timeInFlight - _lastTimeout) >= _initial_retransmission_timeout) {
+    if ((_timeInFlight - _lastTimeout) >= _retransmission_timeout) {
         _lastTimeout = _timeInFlight;
+        _retransmission_timeout *= 2;
+        _consecutive_retransmissions++;
         if (!_segments_outstanding.empty()) {
             TCPSegment tcpSegment = _segments_outstanding.front();
-            _segments_outstanding.pop();
             _segments_out.push(tcpSegment);
         }
     }
 }
 
-unsigned int TCPSender::consecutive_retransmissions() const { return {}; }
+unsigned int TCPSender::consecutive_retransmissions() const
+{
+    return _consecutive_retransmissions;
+}
 
 void TCPSender::send_empty_segment() {}
