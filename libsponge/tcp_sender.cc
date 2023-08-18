@@ -37,36 +37,42 @@ size_t TCPSender::bytes_in_flight() const
 
 void TCPSender::fill_window()
 {
-    cout << "------- eof=" << _stream.eof() << " buff_size=" << _stream.buffer_size() << endl;
-    while(((_stream.buffer_size() > 0) || (_next_seqno == 0) || (_stream.eof())) && (_windowSize > 0)) {
-        size_t maxDataLenReadFromByteStream{};
-        if (_stream.buffer_size() < _windowSize) {
-            maxDataLenReadFromByteStream = _stream.buffer_size();
-        } else {
-            maxDataLenReadFromByteStream = _windowSize;
-        }
-        if (maxDataLenReadFromByteStream > TCPConfig::MAX_PAYLOAD_SIZE) {
-            maxDataLenReadFromByteStream = TCPConfig::MAX_PAYLOAD_SIZE;
-        }
+    while(((_stream.buffer_size() > 0) || (_next_seqno == 0) || (_stream.eof())) && (_windowSize > 0) && !_fin_send_flag) {
+        cout << "------- eof=" << _stream.eof() << " bytes_written=" << _stream.bytes_written() << " bytes in flight=" << bytes_in_flight()<< endl;
+            size_t maxDataLenReadFromByteStream{};
+            if (_stream.buffer_size() < _windowSize) {
+                maxDataLenReadFromByteStream = _stream.buffer_size();
+            } else {
+                maxDataLenReadFromByteStream = _windowSize;
+            }
+            if (maxDataLenReadFromByteStream > TCPConfig::MAX_PAYLOAD_SIZE) {
+                maxDataLenReadFromByteStream = TCPConfig::MAX_PAYLOAD_SIZE;
+            }
 
-        cout << "--- maxDataLenReadFromByteStream=" << maxDataLenReadFromByteStream << endl;
-        TCPSegment tcpSegment;
-        tcpSegment.payload() = _stream.read(maxDataLenReadFromByteStream);
-        tcpSegment.header().sport = 0;
-        tcpSegment.header().dport = 0;
-        tcpSegment.header().seqno = wrap(_next_seqno, _isn);
-        tcpSegment.header().ackno = WrappingInt32{0};
-        tcpSegment.header().syn = (_next_seqno == 0);
-        tcpSegment.header().fin = _stream.eof();
-        tcpSegment.header().win = false;
-        tcpSegment.header().ack = false;
-        tcpSegment.header().doff = 0;
-        tcpSegment.header().cksum = 0;
+            cout << "--- maxDataLenReadFromByteStream=" << maxDataLenReadFromByteStream << endl;
+            TCPSegment tcpSegment;
+            tcpSegment.payload() = _stream.read(maxDataLenReadFromByteStream);
+            tcpSegment.header().sport = 0;
+            tcpSegment.header().dport = 0;
+            tcpSegment.header().seqno = wrap(_next_seqno, _isn);
+            tcpSegment.header().ackno = WrappingInt32{0};
+            tcpSegment.header().syn = (_next_seqno == 0);
+            tcpSegment.header().fin = _stream.eof() && _stream.buffer_empty();
+            tcpSegment.header().win = false;
+            tcpSegment.header().ack = false;
+            tcpSegment.header().doff = 0;
+            tcpSegment.header().cksum = 0;
 
-        _segments_out.push(tcpSegment);
-        _segments_outstanding.push(tcpSegment);
-        _windowSize -= tcpSegment.length_in_sequence_space();
-        _next_seqno += tcpSegment.length_in_sequence_space();
+            _segments_out.push(tcpSegment);
+            _segments_outstanding.push(tcpSegment);
+            if (tcpSegment.header().fin) {
+                /* */
+                _windowSize = 0;
+            } else {
+                _windowSize -= tcpSegment.length_in_sequence_space();
+            }
+            _next_seqno += tcpSegment.length_in_sequence_space();
+            set_fin_send_flag();
     }
 }
 
@@ -75,6 +81,11 @@ void TCPSender::fill_window()
 void TCPSender::ack_received(const WrappingInt32 ackno, const uint16_t window_size)
 {
     uint64_t absAckno = unwrap(ackno, _isn, _next_seqno);
+    if (absAckno > _next_seqno) {
+        /* Impossible ackno (beyond next seqno) is ignored */
+        cout << "receive impossible ackno=" << absAckno << " next_seq=" << _next_seqno << endl;
+        return;
+    }
     while(!_segments_outstanding.empty()) {
         TCPSegment segment = _segments_outstanding.front();
         WrappingInt32 seqno = segment.header().seqno + segment.length_in_sequence_space();
@@ -88,8 +99,10 @@ void TCPSender::ack_received(const WrappingInt32 ackno, const uint16_t window_si
             break;
         }
     }
-    size_t newWindow = absAckno + window_size - _next_seqno;
-    _windowSize = (newWindow > 0) ? newWindow : 0;
+    if (!_fin_send_flag) {
+        size_t newWindow = absAckno + window_size - _next_seqno;
+        _windowSize = (newWindow > 0) ? newWindow : 0;
+    }
 }
 
 //! \param[in] ms_since_last_tick the number of milliseconds since the last call to this method

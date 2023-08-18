@@ -40,6 +40,7 @@ class TCPSender {
     size_t _timeInFlight{};
     size_t _lastTimeout{};
     uint32_t _consecutive_retransmissions{};
+    bool _fin_send_flag{false};
 
   public:
     //! Initialize a TCPSender
@@ -68,6 +69,11 @@ class TCPSender {
     //! \brief Notifies the TCPSender of the passage of time
     void tick(const size_t ms_since_last_tick);
     //!@}
+
+    void set_fin_send_flag()
+    {
+        _fin_send_flag = _stream.eof() && (_stream.bytes_written() + 2 == _next_seqno) && (bytes_in_flight() > 0);
+    }
 
     //! \name Accessors
     //!@{
