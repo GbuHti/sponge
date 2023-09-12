@@ -10,6 +10,13 @@
 #include <queue>
 
 //! \brief The "sender" part of a TCP implementation.
+enum STAT{
+    SYN,
+    PAYLOAD,
+    WAIT_FOR_WINDOW,
+    FIN,
+    OTHER,
+};
 
 //! Accepts a ByteStream, divides it up into segments and sends the
 //! segments, keeps track of which segments are still in-flight,
@@ -35,12 +42,14 @@ class TCPSender {
     //! the (absolute) sequence number for the next byte to be sent
     uint64_t _next_seqno{0};
 
-    size_t _windowSize{1};
+    size_t _windowSize{0};
 
     size_t _timeInFlight{};
     size_t _lastTimeout{};
     uint32_t _consecutive_retransmissions{};
-    bool _fin_send_flag{false};
+    STAT _current_stat{SYN};
+    STAT _last_stat{SYN};
+    bool _isEntry{false};
 
   public:
     //! Initialize a TCPSender
@@ -63,6 +72,9 @@ class TCPSender {
     //! \brief Generate an empty-payload segment (useful for creating empty ACK segments)
     void send_empty_segment();
 
+    size_t get_available_payload_len(size_t window);
+
+    void fill_window_helper(TCPSegment *tcpSegment, size_t size);
     //! \brief create and send segments to fill as much of the window as possible
     void fill_window();
 
@@ -70,9 +82,13 @@ class TCPSender {
     void tick(const size_t ms_since_last_tick);
     //!@}
 
-    void set_fin_send_flag()
+    void set_tcp_sender_status(STAT status)
     {
-        _fin_send_flag = _stream.eof() && (_stream.bytes_written() + 2 == _next_seqno) && (bytes_in_flight() > 0);
+        if (_current_stat != FIN) {
+            _last_stat = _current_stat;
+            _current_stat = status;
+            _isEntry = true;
+        }
     }
 
     //! \name Accessors
