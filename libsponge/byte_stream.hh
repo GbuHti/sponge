@@ -28,8 +28,8 @@ class ByteStream {
   public:
     //! Construct a stream with room for `capacity` bytes.
     ByteStream(const size_t capacity);
-    ByteStream(const ByteStream& byteStream)=delete;
-    ByteStream& operator=(const ByteStream&)=delete;
+    //ByteStream(const ByteStream& byteStream)=delete;
+    //ByteStream& operator=(const ByteStream&)=delete;
 
 
     ~ByteStream();
