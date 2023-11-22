@@ -103,7 +103,6 @@ string TCPState::state_summary(const TCPSender &sender) {
     } else if (sender.next_seqno_absolute() < sender.stream_in().bytes_written() + 2) {
         return TCPSenderStateSummary::SYN_ACKED;
     } else if (sender.bytes_in_flight()) {
-        cout << ">bytes_in_flight=" << sender.bytes_in_flight() << endl;
         return TCPSenderStateSummary::FIN_SENT;
     } else {
         return TCPSenderStateSummary::FIN_ACKED;

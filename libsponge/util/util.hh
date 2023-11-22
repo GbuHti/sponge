@@ -11,6 +11,22 @@
 #include <string>
 #include <system_error>
 #include <vector>
+#include <syslog.h>
+#include <unistd.h>
+#include <sys/syscall.h>
+
+extern int g_logLevel;
+
+#define INFO_LOG(fmt, ...) printf("[%s:%s:%d][INFO] " fmt, __FILE__, __FUNCTION__, __LINE__, ##__VA_ARGS__);
+#define WARN_LOG(fmt, ...) printf("[%s:%s:%d][WARN] " fmt, __FILE__, __FUNCTION__, __LINE__, ##__VA_ARGS__);
+#define LOG_ERROR(fmt, ...) printf("[%s:%s:%d][ERROR] " fmt, __FILE__, __FUNCTION__, __LINE__, ##__VA_ARGS__);
+#define DEBUG_LOG(fmt, ...) do { \
+    if (g_logLevel >= LOG_DEBUG) {\
+        printf("[%s:%s:%d][%d-%d][DEBUG] " fmt, \
+            __FILE__, __FUNCTION__, __LINE__, getpid(), syscall(__NR_gettid), ##__VA_ARGS__);       \
+        }                            \
+    } while(0);
+
 
 //! std::system_error plus the name of what was being attempted
 class tagged_error : public std::system_error {

@@ -5,6 +5,7 @@
 #include "tcp_config.hh"
 #include "tcp_segment.hh"
 #include "wrapping_integers.hh"
+#include "util.hh"
 
 #include <functional>
 #include <queue>
@@ -15,6 +16,7 @@ enum STAT{
     PAYLOAD,
     WAIT_FOR_WINDOW,
     FIN,
+    FIN_ACKED,
     OTHER,
 };
 
@@ -51,6 +53,9 @@ class TCPSender {
     STAT _last_stat{SYN};
     bool _isEntry{false};
 
+    void fill_window_helper(TCPSegment *tcpSegment, size_t size);
+    size_t get_available_payload_len(size_t window);
+
   public:
     //! Initialize a TCPSender
     TCPSender(const size_t capacity = TCPConfig::DEFAULT_CAPACITY,
@@ -72,9 +77,6 @@ class TCPSender {
     //! \brief Generate an empty-payload segment (useful for creating empty ACK segments)
     void send_empty_segment();
 
-    size_t get_available_payload_len(size_t window);
-
-    void fill_window_helper(TCPSegment *tcpSegment, size_t size);
     //! \brief create and send segments to fill as much of the window as possible
     void fill_window();
 
@@ -82,13 +84,18 @@ class TCPSender {
     void tick(const size_t ms_since_last_tick);
     //!@}
 
+    STAT get_tcp_sender_status() const {return _current_stat;}
+
     void set_tcp_sender_status(STAT status)
     {
-        if (_current_stat != FIN) {
-            _last_stat = _current_stat;
-            _current_stat = status;
-            _isEntry = true;
-        }
+       // if (_current_stat != FIN) {
+       //     _last_stat = _current_stat;
+       //     _current_stat = status;
+       //     _isEntry = true;
+        // }
+        _last_stat = _current_stat;
+        _current_stat = status;
+        _isEntry = true;
     }
 
     //! \name Accessors

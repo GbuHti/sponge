@@ -261,10 +261,14 @@ TCPTestHarness TCPTestHarness::in_last_ack(const TCPConfig &cfg,
 TCPTestHarness TCPTestHarness::in_fin_wait_1(const TCPConfig &cfg,
                                              const WrappingInt32 tx_isn,
                                              const WrappingInt32 rx_isn) {
+    cout << "I" << endl;
     TCPTestHarness h = in_established(cfg, tx_isn, rx_isn);
+    cout << "II" << endl;
     h.execute(Close{});
+    cout << "III" << endl;
     h.execute(
         ExpectOneSegment{}.with_no_flags().with_fin(true).with_ack(true).with_ackno(rx_isn + 1).with_seqno(tx_isn + 1));
+    cout << "IV" << endl;
     return h;
 }
 

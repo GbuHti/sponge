@@ -6,6 +6,15 @@
 #include "tcp_sender.hh"
 #include "tcp_state.hh"
 
+enum class Stat{
+    NORMAL,
+    SEND_FIN,
+    SEND_FIN_ACK,
+    RECV_DONE,
+    PASSIVE_CLOSE,
+    LINGER,
+    CLOSE
+};
 //! \brief A complete endpoint of a TCP connection
 class TCPConnection {
   private:
@@ -20,13 +29,19 @@ class TCPConnection {
     //! for 10 * _cfg.rt_timeout milliseconds after both streams have ended,
     //! in case the remote TCPConnection doesn't know we've received its whole stream?
     bool _linger_after_streams_finish{true};
+    size_t _linger_time{};
+
+    Stat _stat{};
 
   public:
+
     //! \name "Input" interface for the writer
     //!@{
 
     //! \brief Initiate a connection by sending a SYN segment
     void connect();
+
+    void complete_segment(TCPSegment &segment) const;
 
     //! \brief Write data to the outbound byte stream, and send it over TCP if possible
     //! \returns the number of bytes from `data` that were actually written.
@@ -83,6 +98,8 @@ class TCPConnection {
     //! Construct a new connection from a configuration
     explicit TCPConnection(const TCPConfig &cfg) : _cfg{cfg} {}
 
+    void UpdateStatus();
+
     //! \name construction and destruction
     //! moving is allowed; copying is disallowed; default construction not possible
 
@@ -94,6 +111,7 @@ class TCPConnection {
     TCPConnection(const TCPConnection &other) = delete;
     TCPConnection &operator=(const TCPConnection &other) = delete;
     //!@}
+    size_t transfer_segment();
 };
 
 #endif  // SPONGE_LIBSPONGE_TCP_FACTORED_HH

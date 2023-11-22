@@ -10,6 +10,8 @@
 
 using namespace std;
 
+int g_logLevel = 6;
+
 //! \returns the number of milliseconds since the program started
 uint64_t timestamp_ms() {
     using time_point = std::chrono::steady_clock::time_point;

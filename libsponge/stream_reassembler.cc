@@ -174,6 +174,8 @@ vector<Interval>::iterator OneIntervalContainFirstUnassemble(vector<Interval> &i
 void StreamReassembler::push_substring(const string &data, const uint64_t index, const bool eof) {
     size_t firstUnacceptable = _firstUnassembled + _output.remaining_capacity();
     if (index >= firstUnacceptable || (data.size() < 1 && eof == false) || (index + data.size() <= _firstUnassembled && eof == false)) {
+        DEBUG_LOG("index=%lu firstUnassembled=%d firstUnacceptable=%zu data.size()=%lu eof=%d\n",
+                  index, _firstUnassembled, firstUnacceptable, data.size(), eof);
         return;
     }
     Interval newInterval(data, index, firstUnacceptable, eof);
@@ -200,8 +202,7 @@ void StreamReassembler::push_substring(const string &data, const uint64_t index,
             it++;
         }
     }
-    cout << "updated interval: " << updatedInterval._s << "[0]: " << updatedInterval._interval[0] << " [1]: "
-        << updatedInterval._interval[1] << endl;
+    DEBUG_LOG("updated interval [0]=%d [1]=%d\n", updatedInterval._interval[0], updatedInterval._interval[1]);
 
     // Update Intervals
     InsertNewInterval(_intervals, updatedInterval);
@@ -211,10 +212,9 @@ void StreamReassembler::push_substring(const string &data, const uint64_t index,
 
     vector<Interval>::iterator theOne = OneIntervalContainFirstUnassemble(_intervals, _firstUnassembled);
     if ( theOne != _intervals.end()) {
-        cout << "yzb One Interval:[" << theOne->_interval[0] << "," << theOne->_interval[1]
-             << ") contain FirstUnassemle:" << _firstUnassembled << endl;
+        DEBUG_LOG("One Interval:[%d,%d] contain FirstUnassemle=%d\n", theOne->_interval[0], theOne->_interval[1], _firstUnassembled);
         _output.write(theOne->_s.substr(_firstUnassembled - theOne->_interval[0], theOne->_interval[1] - _firstUnassembled));
-        if (theOne->_eof == true) {
+        if (theOne->_eof) {
             _output.end_input();
         }
         _firstUnassembled = theOne->_interval[1];

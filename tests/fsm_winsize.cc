@@ -58,12 +58,14 @@ int main() {
             const unsigned swin_mul = MIN_SWIN_MUL + (rd() % (MAX_SWIN_MUL - MIN_SWIN_MUL));
             string d(swin_mul * swin, 0);
             generate(d.begin(), d.end(), [&] { return rd(); });
+            cout << "d.size() " << d.size() << " swin_mul=" << swin_mul << " swin=" << swin << endl;
             test_1.execute(Write{d}.with_bytes_written(swin_mul * swin));
             test_1.execute(Tick(1));
 
             string d_out(swin_mul * swin, 0);
             size_t bytes_total = 0;
             while (bytes_total < swin_mul * swin) {
+                cout << "bytes_total=" << bytes_total << endl;
                 test_1.execute(ExpectSegmentAvailable{}, "test 1 failed: nothing sent after write()");
                 size_t bytes_read = 0;
                 while (test_1.can_read()) {

@@ -3,6 +3,7 @@
 #include "tcp_config.hh"
 
 #include <random>
+#include <util.hh>
 
 // Dummy implementation of a TCP sender
 
@@ -36,7 +37,7 @@ size_t TCPSender::bytes_in_flight() const
 }
 
 void TCPSender::fill_window_helper(TCPSegment *tcpSegment, size_t size) {
-    cout << "fill_window_helper size=" << size << endl;
+    DEBUG_LOG("fill_window_helper size=%zu\n", size);
     tcpSegment->payload() = _stream.read(size);
     tcpSegment->header().sport = 0;
     tcpSegment->header().dport = 0;
@@ -48,8 +49,6 @@ void TCPSender::fill_window_helper(TCPSegment *tcpSegment, size_t size) {
     tcpSegment->header().fin = false;
     tcpSegment->header().win = false;
     tcpSegment->header().ack = false;
-    tcpSegment->header().doff = 0;
-    tcpSegment->header().cksum = 0;
 
     //_segments_out.push(tcpSegment);
     //_segments_outstanding.push(tcpSegment);
@@ -77,7 +76,7 @@ void TCPSender::fill_window()
     switch (_current_stat) {
         case SYN:
         {
-            cout << "fill_window: in state SYN" << endl;
+            DEBUG_LOG("fill_window: in state SYN\n");
             TCPSegment tcpSegment{};
             fill_window_helper(&tcpSegment, 0);
             tcpSegment.header().syn = true;
@@ -88,7 +87,7 @@ void TCPSender::fill_window()
             break;
         }
         case PAYLOAD:
-            cout << "fill_window: In state PAYLOAD, windowsize=" << _windowSize << endl;
+            DEBUG_LOG("In state PAYLOAD, windowsize=%zu\n", _windowSize);
             while(_windowSize > 0) {
                 if (_stream.buffer_size() > 0) {
                     TCPSegment tcpSegment{};
@@ -124,7 +123,7 @@ void TCPSender::fill_window()
             break;
         case WAIT_FOR_WINDOW:
         {
-            cout << "fill_wiodows: In state WAIT_FOR_WINDOW" << endl;
+            DEBUG_LOG("fill_wiodows: In state WAIT_FOR_WINDOW\n");
             if (!_isEntry) {
                 break;
             }
@@ -143,17 +142,20 @@ void TCPSender::fill_window()
                 _segments_outstanding.push(tcpSegment);
                 _next_seqno += tcpSegment.length_in_sequence_space();
             } else {
-                cout << "somethin wrong!!" << endl;
+                WARN_LOG("Something wrong. stream buffer size=%zu\n", _stream.buffer_size());
             }
             _retransmission_timeout = _initial_retransmission_timeout;
             break;
         }
         case FIN:
             set_tcp_sender_status(FIN);
-            cout << "In status FIN" << endl;
+            DEBUG_LOG("In status FIN\n");
+            break;
+        case FIN_ACKED:
+            DEBUG_LOG("In status FIN_ACKED\n");
             break;
         default:
-            cout << "Error: unsupport status=" << _current_stat << endl;
+            DEBUG_LOG("Error: unsupport status=%d\n", _current_stat);
     }
 }
 
@@ -164,7 +166,7 @@ void TCPSender::ack_received(const WrappingInt32 ackno, const uint16_t window_si
     uint64_t absAckno = unwrap(ackno, _isn, _next_seqno);
     if (absAckno > _next_seqno) {
         /* Impossible ackno (beyond next seqno) is ignored */
-        cout << "receive impossible ackno=" << absAckno << " next_seq=" << _next_seqno << endl;
+        DEBUG_LOG("receive impossible ackno=%lu next_seq=%lu\n", absAckno, _next_seqno);
         return;
     }
     //bool ackFlag = false;
@@ -172,7 +174,7 @@ void TCPSender::ack_received(const WrappingInt32 ackno, const uint16_t window_si
         TCPSegment segment = _segments_outstanding.front();
         WrappingInt32 seqno = segment.header().seqno + segment.length_in_sequence_space();
         uint64_t absSeqno = unwrap(seqno, _isn, _next_seqno);
-        cout << "ack_received: absAckno=" << absAckno  << " WinSize=" << window_size << " absSeqnno=" << absSeqno << endl;
+        DEBUG_LOG("ack_received: absAckno=%lu WinSize=%d absSeqnno=%lu\n", absAckno, window_size, absSeqno);
         if (absSeqno <= absAckno) {
             _segments_outstanding.pop();
             _consecutive_retransmissions = 0;
@@ -185,31 +187,63 @@ void TCPSender::ack_received(const WrappingInt32 ackno, const uint16_t window_si
     }
     size_t newWindow = absAckno + window_size - _next_seqno;
     _windowSize = newWindow;
-    if (_windowSize > 0) {
-        cout << "ack_received set state to PAYLOAD" << endl;
-        set_tcp_sender_status(PAYLOAD);
-    } else if (_windowSize == 0 && window_size == 0){
-        cout << "ack_received set state to WAIT_FOR_WINDOW" << endl;
-        set_tcp_sender_status(WAIT_FOR_WINDOW);
-    } else {
-        /* do nothing */
+
+    switch(_current_stat) {
+        case SYN:
+            break;
+        case PAYLOAD:
+            if (_windowSize == 0 && window_size == 0) {
+                DEBUG_LOG("ack_received set state to WAIT_FOR_WINDOW\n");
+                set_tcp_sender_status(WAIT_FOR_WINDOW);
+            }
+            break;
+        case WAIT_FOR_WINDOW:
+            if (_windowSize == 0 && window_size == 0) {
+                DEBUG_LOG("ack_received set state to WAIT_FOR_WINDOW\n");
+                set_tcp_sender_status(WAIT_FOR_WINDOW);
+            } else if (_windowSize > 0) {
+                DEBUG_LOG("ack_received set state to PAYLOAD\n");
+                set_tcp_sender_status(PAYLOAD);
+            }
+            break;
+        case FIN:
+            if (_segments_outstanding.empty()) {
+                DEBUG_LOG("ack_received set state to FIN_ACKED\n");
+                set_tcp_sender_status(FIN_ACKED);
+            }
+            break;
+        case FIN_ACKED:
+            break;
+        default:
+            WARN_LOG("Error: tcp sender should not in this status=%d", _current_stat);
     }
+    //if (_windowSize > 0) {
+    //    cout << "ack_received set state to PAYLOAD" << endl;
+    //    set_tcp_sender_status(PAYLOAD);
+    //} else if (_windowSize == 0 && window_size == 0){
+    //    cout << "ack_received set state to WAIT_FOR_WINDOW" << endl;
+    //    set_tcp_sender_status(WAIT_FOR_WINDOW);
+    //} else {
+    //    /* do nothing */
+    //}
 }
 
 //! \param[in] ms_since_last_tick the number of milliseconds since the last call to this method
+//! 相当于触发一次中断，每次中断看看是否发生了超时。如果超时，则进行重传。
 void TCPSender::tick(const size_t ms_since_last_tick)
 {
     _timeInFlight += ms_since_last_tick;
+    //cout << "timeInFlight: " << _timeInFlight << " _lastTimeout: " << _lastTimeout << " _retransmission_timeout: " << _retransmission_timeout << endl;
     if ((_timeInFlight - _lastTimeout) >= _retransmission_timeout) {
         _lastTimeout = _timeInFlight;
-        if (_current_stat != WAIT_FOR_WINDOW) {
-            _retransmission_timeout *= 2;
-        }
         _consecutive_retransmissions++;
-        if (!_segments_outstanding.empty()) {
+        if (!_segments_outstanding.empty() && _consecutive_retransmissions <= TCPConfig::MAX_RETX_ATTEMPTS) {
             TCPSegment tcpSegment = _segments_outstanding.front();
-            cout << "resend seq=" << tcpSegment.header().seqno << " payload=" << tcpSegment.payload().str() << endl;
+            DEBUG_LOG("retransmissions=%d resend seq=%d\n", _consecutive_retransmissions, tcpSegment.header().seqno.raw_value());
             _segments_out.push(tcpSegment);
+        }
+        if ((_current_stat != WAIT_FOR_WINDOW) &&(!_segments_outstanding.empty())) {
+            _retransmission_timeout *= 2;
         }
     }
 }
@@ -219,4 +253,9 @@ unsigned int TCPSender::consecutive_retransmissions() const
     return _consecutive_retransmissions;
 }
 
-void TCPSender::send_empty_segment() {}
+void TCPSender::send_empty_segment()
+{
+    TCPSegment tcpSegment{};
+    tcpSegment.header().seqno = wrap(_next_seqno - 1, _isn);
+    _segments_out.push(tcpSegment);
+}
