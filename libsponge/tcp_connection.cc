@@ -33,6 +33,7 @@ void TCPConnection::segment_received(const TCPSegment &seg)
 {
     _linger_time = 0;
     if (seg.header().rst) {
+        DEBUG_LOG("sport=%d, dport=%d\n", seg.header().sport, seg.header().dport);
         _receiver.stream_out().set_error();
         _sender.stream_in().set_error();
         UpdateStatus();
