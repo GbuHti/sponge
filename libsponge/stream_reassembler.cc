@@ -174,7 +174,7 @@ vector<Interval>::iterator OneIntervalContainFirstUnassemble(vector<Interval> &i
 void StreamReassembler::push_substring(const string &data, const uint64_t index, const bool eof) {
     size_t firstUnacceptable = _firstUnassembled + _output.remaining_capacity();
     if (index >= firstUnacceptable || (data.size() < 1 && eof == false) || (index + data.size() <= _firstUnassembled && eof == false)) {
-        DEBUG_LOG("index=%lu firstUnassembled=%d firstUnacceptable=%zu data.size()=%lu eof=%d\n",
+        ERROR_LOG("index=%lu firstUnassembled=%d firstUnacceptable=%zu data.size()=%lu eof=%d\n",
                   index, _firstUnassembled, firstUnacceptable, data.size(), eof);
         return;
     }

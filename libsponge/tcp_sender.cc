@@ -96,13 +96,22 @@ void TCPSender::fill_window()
                     _windowSize -= tcpSegment.length_in_sequence_space();
                     if (_windowSize > 0 && _stream.buffer_empty() && _stream.eof()) {
                         tcpSegment.header().fin = true;
-                        _windowSize -= tcpSegment.length_in_sequence_space();
+                        //_windowSize -= tcpSegment.length_in_sequence_space();
+                        _windowSize -= 1;
                         _segments_out.push(tcpSegment);
+                        DEBUG_LOG("[SEND][DATA] seq=%lu syn=%d fin=%d payload length=%zu\n",
+                                  unwrap(tcpSegment.header().seqno, _isn, _next_seqno),
+                                  tcpSegment.header().syn, tcpSegment.header().fin,
+                                  tcpSegment.payload().str().size());
                         _segments_outstanding.push(tcpSegment);
                         _next_seqno += tcpSegment.length_in_sequence_space();
                         set_tcp_sender_status(FIN);
                         break;
                     }
+                    DEBUG_LOG("[SEND][DATA] seq=%lu syn=%d fin=%d payload length=%zu\n",
+                              unwrap(tcpSegment.header().seqno, _isn, _next_seqno),
+                              tcpSegment.header().syn, tcpSegment.header().fin,
+                              tcpSegment.payload().str().size());
                     _segments_out.push(tcpSegment);
                     _segments_outstanding.push(tcpSegment);
                     _next_seqno += tcpSegment.length_in_sequence_space();
@@ -113,6 +122,10 @@ void TCPSender::fill_window()
                     _windowSize -= tcpSegment.length_in_sequence_space();
                     _next_seqno += tcpSegment.length_in_sequence_space();
                     _segments_out.push(tcpSegment);
+                    DEBUG_LOG("[SEND][DATA] seq=%lu syn=%d fin=%d payload length=%zu\n",
+                              unwrap(tcpSegment.header().seqno, _isn, _next_seqno),
+                              tcpSegment.header().syn, tcpSegment.header().fin,
+                              tcpSegment.payload().str().size());
                     _segments_outstanding.push(tcpSegment);
                     set_tcp_sender_status(FIN);
                     break;
@@ -132,6 +145,10 @@ void TCPSender::fill_window()
                 TCPSegment tcpSegment{};
                 fill_window_helper(&tcpSegment, 1);
                 _segments_out.push(tcpSegment);
+                DEBUG_LOG("[SEND][DATA] seq=%lu syn=%d fin=%d payload length=%zu\n",
+                          unwrap(tcpSegment.header().seqno, _isn, _next_seqno),
+                          tcpSegment.header().syn, tcpSegment.header().fin,
+                          tcpSegment.payload().str().size());
                 _segments_outstanding.push(tcpSegment);
                 _next_seqno += tcpSegment.length_in_sequence_space();
             } else if (_stream.eof()) {
@@ -139,6 +156,10 @@ void TCPSender::fill_window()
                 fill_window_helper(&tcpSegment, 1);
                 tcpSegment.header().fin = true;
                 _segments_out.push(tcpSegment);
+                DEBUG_LOG("[SEND][DATA] seq=%lu syn=%d fin=%d payload length=%zu\n",
+                          unwrap(tcpSegment.header().seqno, _isn, _next_seqno),
+                          tcpSegment.header().syn, tcpSegment.header().fin,
+                          tcpSegment.payload().str().size());
                 _segments_outstanding.push(tcpSegment);
                 _next_seqno += tcpSegment.length_in_sequence_space();
             } else {
@@ -171,10 +192,11 @@ void TCPSender::ack_received(const WrappingInt32 ackno, const uint16_t window_si
     }
     //bool ackFlag = false;
     while(!_segments_outstanding.empty()) {
-        TCPSegment segment = _segments_outstanding.front();
-        WrappingInt32 seqno = segment.header().seqno + segment.length_in_sequence_space();
+        TCPSegment segOutstanding = _segments_outstanding.front();
+        WrappingInt32 seqno = segOutstanding.header().seqno + segOutstanding.length_in_sequence_space();
         uint64_t absSeqno = unwrap(seqno, _isn, _next_seqno);
-        DEBUG_LOG("ack_received: absAckno=%lu WinSize=%d absSeqnno=%lu\n", absAckno, window_size, absSeqno);
+        DEBUG_LOG("ack_received: absAckno=%lu WinSize=%d absSeqnno=%lu next_seqno=%lu\n",
+                  absAckno, window_size, absSeqno, _next_seqno);
         if (absSeqno <= absAckno) {
             _segments_outstanding.pop();
             _consecutive_retransmissions = 0;
@@ -257,5 +279,6 @@ void TCPSender::send_empty_segment()
 {
     TCPSegment tcpSegment{};
     tcpSegment.header().seqno = wrap(_next_seqno - 1, _isn);
+    DEBUG_LOG("send empty segment, absseqno=%lu\n", _next_seqno - 1);
     _segments_out.push(tcpSegment);
 }

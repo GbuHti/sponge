@@ -19,7 +19,13 @@ extern int g_logLevel;
 
 #define INFO_LOG(fmt, ...) printf("[%s:%s:%d][INFO] " fmt, __FILE__, __FUNCTION__, __LINE__, ##__VA_ARGS__);
 #define WARN_LOG(fmt, ...) printf("[%s:%s:%d][WARN] " fmt, __FILE__, __FUNCTION__, __LINE__, ##__VA_ARGS__);
-#define LOG_ERROR(fmt, ...) printf("[%s:%s:%d][ERROR] " fmt, __FILE__, __FUNCTION__, __LINE__, ##__VA_ARGS__);
+
+#define ERROR_LOG(fmt, ...) do { \
+            if (g_logLevel >= LOG_ERR) { \
+                fprintf(stderr, "[%s:%s:%d][ERROR] " fmt, __FILE__, __FUNCTION__, __LINE__, ##__VA_ARGS__); \
+            }                        \
+        } while(0);
+
 #define DEBUG_LOG(fmt, ...) do { \
     if (g_logLevel >= LOG_DEBUG) {\
         fprintf(stderr, "[%s:%s:%d][%d-%d][DEBUG] " fmt, \

@@ -18,7 +18,8 @@ void TCPReceiver::segment_received(const TCPSegment &seg) {
     if(_syn) {
         uint64_t absSeqno = unwrap(seg.header().seqno, _ISN, _checkPoint);
         uint64_t index = seg.header().syn ? absSeqno : absSeqno - 1;
-        DEBUG_LOG("seqno=%u | absSeqno=%lu | payload size=%zu\n", seg.header().seqno.raw_value(), absSeqno, seg.payload().size());
+        DEBUG_LOG("[RSV][DATA] seqno=%u | absSeqno=%lu | payload size=%zu | ack=%d | absackno=%lu\n",
+                  seg.header().seqno.raw_value(), absSeqno, seg.payload().size(), seg.header().ack, unwrap(seg.header().ackno, _ISN, _checkPoint));
         _reassembler.push_substring(seg.payload().copy(), index, seg.header().fin);
         _checkPoint = unwrap(ackno().value_or(static_cast<WrappingInt32>(0)),  _ISN, _checkPoint);
         /* 不可以直接使用seg.header().fin */
