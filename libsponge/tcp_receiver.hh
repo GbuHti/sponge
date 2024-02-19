@@ -28,6 +28,8 @@ class TCPReceiver {
 
 
   public:
+    WrappingInt32 GetIsn() {return _ISN;}
+    uint64_t  GetCheckPoint() {return _checkPoint;}
     //! \brief Construct a TCP receiver
     //!
     //! \param capacity the maximum number of bytes that the receiver will

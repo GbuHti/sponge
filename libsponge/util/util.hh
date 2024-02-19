@@ -22,7 +22,8 @@ extern int g_logLevel;
 
 #define ERROR_LOG(fmt, ...) do { \
             if (g_logLevel >= LOG_ERR) { \
-                fprintf(stderr, "[%s:%s:%d][ERROR] " fmt, __FILE__, __FUNCTION__, __LINE__, ##__VA_ARGS__); \
+                fprintf(stderr, "[%s:%s:%d][%d-%d][ERROR] " fmt, \
+                    __FILE__, __FUNCTION__, __LINE__, getpid(), syscall(__NR_gettid), ##__VA_ARGS__); \
             }                        \
         } while(0);
 

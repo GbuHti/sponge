@@ -33,15 +33,17 @@ void TCPConnection::segment_received(const TCPSegment &seg)
 {
     _linger_time = 0;
     if (seg.header().rst) {
-        DEBUG_LOG("sport=%d, dport=%d\n", seg.header().sport, seg.header().dport);
+        ERROR_LOG("sport=%d, dport=%d\n", seg.header().sport, seg.header().dport);
         _receiver.stream_out().set_error();
         _sender.stream_in().set_error();
         UpdateStatus();
         return;
     }
 
+    /* receiver handle this segment first */
     _receiver.segment_received(seg);
 
+    /* then sender handle this segmnet */
     if (seg.header().ack) {
         _sender.ack_received(seg.header().ackno, seg.header().win);
         /* 关于何时启动_sender */
@@ -94,6 +96,12 @@ size_t TCPConnection::transfer_segment() {
         TCPSegment segment = _sender.segments_out().front();
         _sender.segments_out().pop();
         complete_segment(segment);
+        DEBUG_LOG("[SEND][DATA] seq=%u syn=%d fin=%d payload length=%zu ackno=%u window_size=%d\n",
+                  segment.header().seqno.raw_value(),
+                  segment.header().syn, segment.header().fin,
+                  segment.payload().str().size(),
+                  segment.header().ackno.raw_value(),
+                  segment.header().win);
         _segments_out.push(segment);
     }
     return cnt;
