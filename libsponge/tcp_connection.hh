@@ -15,6 +15,11 @@ enum class Stat{
     LINGER,
     CLOSE
 };
+
+#define CASE_STR(x) case x: return #x; break;
+
+
+
 //! \brief A complete endpoint of a TCP connection
 class TCPConnection {
   private:
@@ -99,6 +104,9 @@ class TCPConnection {
     explicit TCPConnection(const TCPConfig &cfg) : _cfg{cfg} {}
 
     void UpdateStatus();
+
+    string print_stat_string(Stat s);
+
 
     //! \name construction and destruction
     //! moving is allowed; copying is disallowed; default construction not possible

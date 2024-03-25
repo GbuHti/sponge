@@ -84,6 +84,7 @@ void TCPConnection::complete_segment(TCPSegment &segment) const {
 size_t TCPConnection::write(const string &data) {
     size_t bytesWriten = _sender.stream_in().write(data);
     _sender.fill_window();
+    DEBUG_LOG("[WRITE][DATA] data=%s\n", data.c_str());
     transfer_segment();
     UpdateStatus();
     return bytesWriten;
@@ -109,6 +110,7 @@ size_t TCPConnection::transfer_segment() {
 
 void TCPConnection::UpdateStatus()
 {
+    Stat oldStatus = _stat;
     switch(_stat) {
         case Stat::NORMAL:
             // 理论上两个条件一定不会在同一时刻发生
@@ -175,6 +177,27 @@ void TCPConnection::UpdateStatus()
         default:
             WARN_LOG("Unsupport status=%d\n", static_cast<int>(_stat));
     }
+    if (oldStatus != _stat) {
+        DEBUG_LOG("TCP_Connection status changed, from %s to %s\n",
+                  print_stat_string(oldStatus).c_str(),
+                  print_stat_string(_stat).c_str());
+    }
+}
+
+string TCPConnection::print_stat_string(Stat s)
+{
+    switch(s) {
+        CASE_STR(Stat::NORMAL);
+        CASE_STR(Stat::SEND_FIN);
+        CASE_STR(Stat::SEND_FIN_ACK);
+        CASE_STR(Stat::RECV_DONE);
+        CASE_STR(Stat::PASSIVE_CLOSE);
+        CASE_STR(Stat::LINGER);
+        CASE_STR(Stat::CLOSE);
+        default:
+            break;
+    }
+    return "UNKNOW STATUS";
 }
 
 //! \param[in] ms_since_last_tick number of milliseconds since the last call to this method

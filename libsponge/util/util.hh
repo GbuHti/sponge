@@ -22,14 +22,14 @@ extern int g_logLevel;
 
 #define ERROR_LOG(fmt, ...) do { \
             if (g_logLevel >= LOG_ERR) { \
-                fprintf(stderr, "[%s:%s:%d][%d-%d][ERROR] " fmt, \
+                fprintf(stderr, "[%s:%s:%d][%d-%ld][ERROR] " fmt, \
                     __FILE__, __FUNCTION__, __LINE__, getpid(), syscall(__NR_gettid), ##__VA_ARGS__); \
             }                        \
         } while(0);
 
 #define DEBUG_LOG(fmt, ...) do { \
     if (g_logLevel >= LOG_DEBUG) {\
-        fprintf(stderr, "[%s:%s:%d][%d-%d][DEBUG] " fmt, \
+        fprintf(stderr, "[%s:%s:%d][%d-%ld][DEBUG] " fmt, \
             __FILE__, __FUNCTION__, __LINE__, getpid(), syscall(__NR_gettid), ##__VA_ARGS__);       \
         }                            \
     } while(0);
