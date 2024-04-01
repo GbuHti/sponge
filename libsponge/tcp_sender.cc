@@ -258,8 +258,8 @@ void TCPSender::tick(const size_t ms_since_last_tick)
     //cout << "timeInFlight: " << _timeInFlight << " _lastTimeout: " << _lastTimeout << " _retransmission_timeout: " << _retransmission_timeout << endl;
     if ((_timeInFlight - _lastTimeout) >= _retransmission_timeout) {
         _lastTimeout = _timeInFlight;
-        _consecutive_retransmissions++;
         if (!_segments_outstanding.empty() && _consecutive_retransmissions <= TCPConfig::MAX_RETX_ATTEMPTS) {
+            _consecutive_retransmissions++;
             TCPSegment tcpSegment = _segments_outstanding.front();
             DEBUG_LOG("retransmissions=%d resend seq=%d\n", _consecutive_retransmissions, tcpSegment.header().seqno.raw_value());
             _segments_out.push(tcpSegment);

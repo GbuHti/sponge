@@ -10,7 +10,7 @@
 
 using namespace std;
 
-int g_logLevel = 7;
+int g_logLevel = 2;
 
 //! \returns the number of milliseconds since the program started
 uint64_t timestamp_ms() {

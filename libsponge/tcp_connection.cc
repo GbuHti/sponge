@@ -34,8 +34,8 @@ void TCPConnection::segment_received(const TCPSegment &seg)
     _linger_time = 0;
     if (seg.header().rst) {
         ERROR_LOG("sport=%d, dport=%d\n", seg.header().sport, seg.header().dport);
-        _receiver.stream_out().set_error();
-        _sender.stream_in().set_error();
+        _receiver.stream_out().set_error(__FUNCTION__, __LINE__);
+        _sender.stream_in().set_error(__FUNCTION__, __LINE__);
         UpdateStatus();
         return;
     }
@@ -207,11 +207,14 @@ void TCPConnection::tick(const size_t ms_since_last_tick)
     _sender.tick(ms_since_last_tick);
     static_cast<void>(transfer_segment());
     if (_sender.consecutive_retransmissions() > TCPConfig::MAX_RETX_ATTEMPTS) {
-        TCPSegment segment = {};
+        if (!_segments_out.empty()) {
+            _segments_out.pop();
+        }
+        TCPSegment segment{};
         segment.header().rst = true;
         _segments_out.push(segment);
-        _sender.stream_in().set_error();
-        _receiver.stream_out().set_error();
+        _sender.stream_in().set_error(__FUNCTION__, __LINE__);
+        _receiver.stream_out().set_error(__FUNCTION__, __LINE__);
     }
     UpdateStatus();
     //cout << "sender status: " << _sender.get_tcp_sender_status() << "receiver status: " << _receiver.stream_out().input_ended() << endl;
