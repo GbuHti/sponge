@@ -55,6 +55,7 @@ void TCPConnection::segment_received(const TCPSegment &seg)
         _sender.fill_window();
         if (_sender.segments_out().empty()) {
             TCPSegment segment{};
+            _sender.fill_window_helper(&segment, 0);
             _sender.segments_out().push(segment);
         }
     } else {

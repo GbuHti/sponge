@@ -163,7 +163,8 @@ void TCPSender::fill_window()
                 _segments_outstanding.push(tcpSegment);
                 _next_seqno += tcpSegment.length_in_sequence_space();
             } else {
-                WARN_LOG("Something wrong. stream buffer size=%zu\n", _stream.buffer_size());
+                _isEntry = true;
+                WARN_LOG("Something wrong. stream buffer size=%zu", _stream.buffer_size());
             }
             _retransmission_timeout = _initial_retransmission_timeout;
             break;
@@ -210,6 +211,7 @@ void TCPSender::ack_received(const WrappingInt32 ackno, const uint16_t window_si
     size_t newWindow = (absAckno + window_size) > _next_seqno ? absAckno + window_size - _next_seqno : 0;
     _windowSize = newWindow;
 
+    _windowSize = (absAckno + window_size) > _next_seqno ? absAckno + window_size - _next_seqno : 0;
     switch(_current_stat) {
         case SYN:
             break;

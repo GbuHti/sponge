@@ -53,10 +53,10 @@ class TCPSender {
     STAT _last_stat{SYN};
     bool _isEntry{false};
 
-    void fill_window_helper(TCPSegment *tcpSegment, size_t size);
     size_t get_available_payload_len(size_t window);
 
   public:
+    void fill_window_helper(TCPSegment *tcpSegment, size_t size);
     //! Initialize a TCPSender
     TCPSender(const size_t capacity = TCPConfig::DEFAULT_CAPACITY,
               const uint16_t retx_timeout = TCPConfig::TIMEOUT_DFLT,
