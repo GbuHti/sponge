@@ -55,6 +55,7 @@ void TCPConnection::segment_received(const TCPSegment &seg)
         _sender.fill_window();
         if (_sender.segments_out().empty()) {
             TCPSegment segment{};
+            /* 如果注释掉下面这行，client 会从169.254.145.9 发包，而非169.254.144.1，导致失败，不清楚原因 */
             _sender.fill_window_helper(&segment, 0);
             _sender.segments_out().push(segment);
         }
