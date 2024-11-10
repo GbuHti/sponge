@@ -14,23 +14,38 @@
 #include <syslog.h>
 #include <unistd.h>
 #include <sys/syscall.h>
+#include <cstring>
 
 extern int g_logLevel;
 
-#define INFO_LOG(fmt, ...) printf("[%s:%s:%d][INFO] " fmt, __FILE__, __FUNCTION__, __LINE__, ##__VA_ARGS__);
-#define WARN_LOG(fmt, ...) printf("[%s:%s:%d][WARN] " fmt, __FILE__, __FUNCTION__, __LINE__, ##__VA_ARGS__);
+#define filename(x) strrchr(x, '/') ? strrchr(x, '/') + 1 : x
+
+#define INFO_LOG(fmt, ...) do { \
+            if (g_logLevel >= LOG_INFO) { \
+                fprintf(stderr, "[%s:%s:%d][%d-%ld][INFO] " fmt"\n", \
+                    filename(__FILE__), __FUNCTION__, __LINE__, getpid(), syscall(__NR_gettid), ##__VA_ARGS__); \
+            }                        \
+        } while(0);
+
+#define WARN_LOG(fmt, ...) do { \
+            if (g_logLevel >= LOG_WARNING) { \
+                fprintf(stderr, "[%s:%s:%d][%d-%ld][WARN] " fmt"\n", \
+                    filename(__FILE__), __FUNCTION__, __LINE__, getpid(), syscall(__NR_gettid), ##__VA_ARGS__); \
+            }                        \
+        } while(0);
+
 
 #define ERROR_LOG(fmt, ...) do { \
             if (g_logLevel >= LOG_ERR) { \
-                fprintf(stderr, "[%s:%s:%d][%d-%ld][ERROR] " fmt, \
-                    __FILE__, __FUNCTION__, __LINE__, getpid(), syscall(__NR_gettid), ##__VA_ARGS__); \
+                fprintf(stderr, "[%s:%s:%d][%d-%ld][ERROR] " fmt"\n", \
+                    filename(__FILE__), __FUNCTION__, __LINE__, getpid(), syscall(__NR_gettid), ##__VA_ARGS__); \
             }                        \
         } while(0);
 
 #define DEBUG_LOG(fmt, ...) do { \
     if (g_logLevel >= LOG_DEBUG) {\
-        fprintf(stderr, "[%s:%s:%d][%d-%ld][DEBUG] " fmt, \
-            __FILE__, __FUNCTION__, __LINE__, getpid(), syscall(__NR_gettid), ##__VA_ARGS__);       \
+        fprintf(stderr, "[%s:%s:%d][%d-%ld][DEBUG] " fmt"\n", \
+            filename(__FILE__), __FUNCTION__, __LINE__, getpid(), syscall(__NR_gettid), ##__VA_ARGS__);       \
         }                            \
     } while(0);
 

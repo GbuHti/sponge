@@ -129,7 +129,9 @@ EventLoop::Result EventLoop::wait_next_event(const int timeout_ms) {
         if (poll_ready) {
             // we only want to call callback if revents includes the event we asked for
             const auto count_before = this_rule.service_count();
+            DEBUG_LOG("poll_ready! fd=%d I", this_rule.fd.fd_num());
             this_rule.callback();
+            DEBUG_LOG("poll_ready! fd=%d II", this_rule.fd.fd_num());
 
             // only check for busy wait if we're not canceling or exiting
             if (count_before == this_rule.service_count() and this_rule.interest()) {

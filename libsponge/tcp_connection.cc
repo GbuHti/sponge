@@ -98,9 +98,9 @@ size_t TCPConnection::transfer_segment() {
         TCPSegment segment = _sender.segments_out().front();
         _sender.segments_out().pop();
         complete_segment(segment);
-        DEBUG_LOG("[SEND][DATA] seq=%u syn=%d fin=%d payload length=%zu ackno=%u window_size=%d\n",
+        DEBUG_LOG("[SEND][DATA] seq=%u syn=%d fin=%d ack=%d rst=%d payload length=%zu ackno=%u window_size=%d",
                   segment.header().seqno.raw_value(),
-                  segment.header().syn, segment.header().fin,
+                  segment.header().syn, segment.header().fin, segment.header().ack, segment.header().rst,
                   segment.payload().str().size(),
                   segment.header().ackno.raw_value(),
                   segment.header().win);
@@ -179,7 +179,7 @@ void TCPConnection::UpdateStatus()
             WARN_LOG("Unsupport status=%d\n", static_cast<int>(_stat));
     }
     if (oldStatus != _stat) {
-        DEBUG_LOG("TCP_Connection status changed, from %s to %s\n",
+        DEBUG_LOG("TCP_Connection status changed, from %s to %s",
                   print_stat_string(oldStatus).c_str(),
                   print_stat_string(_stat).c_str());
     }
@@ -213,6 +213,7 @@ void TCPConnection::tick(const size_t ms_since_last_tick)
         }
         TCPSegment segment{};
         segment.header().rst = true;
+        DEBUG_LOG("Exceed MAX_RETX_ATTEMPTS=%d, set rst to true!!!!", TCPConfig::MAX_RETX_ATTEMPTS);
         _segments_out.push(segment);
         _sender.stream_in().set_error(__FUNCTION__, __LINE__);
         _receiver.stream_out().set_error(__FUNCTION__, __LINE__);

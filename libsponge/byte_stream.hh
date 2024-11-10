@@ -50,7 +50,7 @@ class ByteStream {
     void end_input();
 
     //! Indicate that the stream suffered an error.
-    void set_error(const char *s, int line) {DEBUG_LOG("%s:%d set error\n", s, line); _error = true; }
+    void set_error(const char *s, int line) {DEBUG_LOG("%s:%d set error", s, line); _error = true; }
     //!@}
 
     //! \name "Output" interface for the reader

@@ -10,7 +10,28 @@
 
 using namespace std;
 
-int g_logLevel = 2;
+int g_logLevel = 6;
+
+__attribute__((constructor))
+void InitLogLevel()
+{
+    char *s = getenv("CS144_LOG_LEVEL");
+    if (s == nullptr) {
+        return;
+    }
+    string logLevelStr = string(s);
+    if (logLevelStr == "ERROR") {
+        g_logLevel = LOG_ERR;
+    } else if (logLevelStr == "WARN") {
+        g_logLevel = LOG_WARNING;
+    } else if (logLevelStr == "INFO") {
+        g_logLevel = LOG_INFO;
+    } else if (logLevelStr == "DEBUG") {
+        g_logLevel = LOG_DEBUG;
+    } else {
+        ERROR_LOG("Unsupport log level type=%s", logLevelStr.c_str());
+    }
+}
 
 //! \returns the number of milliseconds since the program started
 uint64_t timestamp_ms() {

@@ -173,9 +173,18 @@ vector<Interval>::iterator OneIntervalContainFirstUnassemble(vector<Interval> &i
 //! contiguous substrings and writes them into the output stream in order.
 void StreamReassembler::push_substring(const string &data, const uint64_t index, const bool eof) {
     size_t firstUnacceptable = _firstUnassembled + _output.remaining_capacity();
-    if (index >= firstUnacceptable || (data.size() < 1 && eof == false) || (index + data.size() <= _firstUnassembled && eof == false)) {
-        ERROR_LOG("index=%lu firstUnassembled=%d firstUnacceptable=%zu data.size()=%lu eof=%d\n",
-                  index, _firstUnassembled, firstUnacceptable, data.size(), eof);
+    if (index >= firstUnacceptable) {
+        ERROR_LOG("Receive impossible byte index=%lu >= firstUnacceptable=%u\n",
+                  index, _firstUnacceptable)
+        return;
+    }
+    if (data.empty() && (!eof)) {
+        DEBUG_LOG("No data payload, byte index=%lu", index);
+        return;
+    }
+    if ((index + data.size() <= _firstUnassembled) && (!eof))  {
+        DEBUG_LOG("No need to handle this data, index=%lu, data size=%zu, firstUnassembled=%u",
+                  index, data.size(), _firstUnassembled);
         return;
     }
     Interval newInterval(data, index, firstUnacceptable, eof);
@@ -202,17 +211,14 @@ void StreamReassembler::push_substring(const string &data, const uint64_t index,
             it++;
         }
     }
-    DEBUG_LOG("updated interval [0]=%d [1]=%d\n", updatedInterval._interval[0], updatedInterval._interval[1]);
+    DEBUG_LOG("updated interval [0]=%d [1]=%d", updatedInterval._interval[0], updatedInterval._interval[1]);
 
     // Update Intervals
     InsertNewInterval(_intervals, updatedInterval);
-    //for (auto i = _intervals.begin(); i != _intervals.end(); i++) {
-    //    cout << "after insert => [0]: " << i->_interval[0] << "[1]: " << i->_interval[1] << endl;
-    //}
 
     vector<Interval>::iterator theOne = OneIntervalContainFirstUnassemble(_intervals, _firstUnassembled);
     if ( theOne != _intervals.end()) {
-        DEBUG_LOG("One Interval:[%d,%d] contain FirstUnassemle=%d\n", theOne->_interval[0], theOne->_interval[1], _firstUnassembled);
+        DEBUG_LOG("One Interval:[%d,%d] contain FirstUnassemle=%d", theOne->_interval[0], theOne->_interval[1], _firstUnassembled);
         _output.write(theOne->_s.substr(_firstUnassembled - theOne->_interval[0], theOne->_interval[1] - _firstUnassembled));
         if (theOne->_eof) {
             _output.end_input();
